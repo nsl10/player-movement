@@ -1,0 +1,113 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class movement : MonoBehaviour
+{
+    public Rigidbody2D p1;
+    private float thrust = 0.015f;
+    private float jump = 50.0f;
+    public Transform m_GroundCheck; // checks if grounded
+    public LayerMask m_WhatIsGround; // marks what is "Ground"
+    public Transform m_WallCheckLeft; // checks for grab
+    public Transform m_WallCheckRight; // checks for grab
+    public LayerMask m_WhatIsWall; // marks what is "wall"
+    private bool GlideCheck = false;
+    private bool GrabCheck = false;
+
+    const float k_GroundedRadius = .2f;  // radius to determine grounded && jumping leaniency
+
+    // Start is called before the first frame update
+    void Start()
+    {
+        transform.position = new Vector3(0.0f, -1.0f, 0.0f);
+        Debug.Log("running");
+    }
+    // runs for checking ground below player
+    bool GroundCheck() {
+        Collider2D[] colliders = Physics2D.OverlapCircleAll(m_GroundCheck.position, k_GroundedRadius, m_WhatIsGround);
+        for (int i = 0; i < colliders.Length; i++)
+        {
+            if (colliders[i].gameObject != gameObject)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+    bool WallCheckLeft() // checks for wall next to player to left
+    {
+        Collider2D[] colliders = Physics2D.OverlapCircleAll(m_WallCheckLeft.position, k_GroundedRadius, m_WhatIsWall);
+        for (int i = 0; i < colliders.Length; i++)
+        {
+            if (colliders[i].gameObject != gameObject)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+    bool WallCheckRight() // checks for wall next to player to right
+    {
+        Collider2D[] colliders = Physics2D.OverlapCircleAll(m_WallCheckRight.position, k_GroundedRadius, m_WhatIsWall);
+        for (int i = 0; i < colliders.Length; i++)
+        {
+            if (colliders[i].gameObject != gameObject)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+    // Update is called once per frame
+    void Update()
+    {
+        if (GrabCheck == false)
+        {
+            transform.Translate(thrust * Input.GetAxisRaw("Horizontal"), 0, 0);
+        }
+        if (Input.GetAxisRaw("Vertical") > 0 && GroundCheck() == true && GrabCheck == false)
+        {
+            p1.AddForce(transform.up * jump * Input.GetAxisRaw("Vertical"));
+        }
+        if (Input.GetAxisRaw("Vertical") > 0 && GroundCheck() == false && GlideCheck == false && p1.velocity.y < 0 )
+        {
+            p1.AddForce(transform.up * 9.81f * p1.velocity.y);
+            p1.gravityScale = 0.03f;
+            GlideCheck = true;
+        }
+        if (p1.gravityScale != 1f)
+        {
+            if (GroundCheck() == true)
+            {
+                p1.gravityScale = 1f;
+                GlideCheck = false;
+            }
+        }
+        if (Input.GetKey("e"))
+        {
+            if (WallCheckLeft() == true)
+            {
+                Debug.Log("grab");
+                GrabCheck = true;
+                p1.constraints = RigidbodyConstraints2D.FreezePositionY | RigidbodyConstraints2D.FreezeRotation;
+            }
+            if (WallCheckRight() == true)
+            {
+                Debug.Log("grab");
+                GrabCheck = true;
+                p1.constraints = RigidbodyConstraints2D.FreezePositionY | RigidbodyConstraints2D.FreezeRotation;
+            }
+        }
+        if (Input.GetKey("r")) {
+            GrabCheck = false;
+            p1.gravityScale = 1f;
+            p1.constraints = RigidbodyConstraints2D.None;
+            p1.constraints = RigidbodyConstraints2D.FreezeRotation;
+        }
+        if (GrabCheck == true) {
+            transform.Translate(0, thrust * Input.GetAxisRaw("Vertical"), 0);
+            p1.gravityScale = 0f;
+        }
+    }
+}
